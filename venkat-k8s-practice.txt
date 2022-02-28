@@ -1,0 +1,149 @@
+valaxy referance for k8s
+
+https://devopsrealtime.com/how-to-install-and-setup-kubernetes-cluster-kops-eksctl-kubeadm/
+
+# This file is venkat k8s practice
+setup bootstrap server with kops method.
+
+Create bootstrap server
+1. create EC2 server
+2. install aws cli in EC2 and check version (aws --version)
+
+Install kubectl
+
+1. curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+2. chmod +x kubectl
+3. mv kubectl /usr/local/bin/
+4. kubectl version
+
+Install kops
+
+1. curl -Lo kops https://github.com/kubernetes/kops/releases/download/$(curl -s https://api.github.com/repos/kubernetes/kops/releases/latest | grep tag_name | cut -d '"' -f 4)/kops-linux-amd64
+2. chmod +x kops
+3. sudo mv kops /usr/local/bin/kops
+
+kops version
+
+
+Create IAM Role
+Create IAM Role and attach the role to bootstrap server. IAM Role must have below policies attached.
+
+AmazonEC2FullAccess
+AmazonRoute53FullAccess
+AmazonS3FullAccess
+IAMFullAccess
+AmazonVPCFullAccess
+AmazonEventBridgeFullAccess
+AmazonSQSFullAccess
+
+-----------
+Configure Route53
+
+route53 hosted zone need to add ex (kloudking.in)
+
+add route 53 hostnames in godaddy
+
+-------------------
+
+1. Create a S3 bucket
+
+bucker name : venkata-k8s-config
+
+Setup SSH Keys
+
+Create SSH Keys by running “#
+ssh-keygen -t rsa
+
+
+export NAME=venkat.kloudking.in
+export KOPS_STATE_STORE=s3://venkata-k8s-config
+
+for single hosted zone
+kops create cluster –zones=us-east-1a ${NAME}
+
+for multiple hosted zones
+
+kops create cluster -–zones=us-east-1a,us-east-1b ${NAME}
+
+Suggestions:
+ * list clusters with: kops get cluster
+ * edit this cluster with: kops edit cluster venkat.kloudking.in
+ * edit your node instance group: kops edit ig --name=venkat.kloudking.in nodes-us-east-1a
+ * edit your master instance group: kops edit ig --name=venkat.kloudking.in master-us-east-1a
+
+ kops update cluster --name venkat.kloudking.in --yes --admin
+ 
+ to check cluster status
+ 
+ kops validate cluster --wait 10m
+ 
+after succuess full result like below 
+
+#########################
+
+NODE STATUS
+NAME                            ROLE    READY
+ip-172-20-36-125.ec2.internal   master  True
+ip-172-20-40-133.ec2.internal   node    True
+ip-172-20-65-198.ec2.internal   node    True
+
+Your cluster venkat.kloudking.in is ready
+
+it will create EC2 instalnces t3.medium those are billable, Terminate EC2 instances ASAP to reduce pricing
+
+to Terminate EC2 instances use below command
+
+kops delete cluster -–name ${NAME} -–yes
+
+
+to create again same 
+
+export NAME=venkat.kloudking.in
+export KOPS_STATE_STORE=s3://venkata-k8s-config
+
+kops update cluster ${NAME} –yes –admin
+
+#################
+
+kubectl run web-server --image=httpd  - to create a pod
+
+to see number of of pods
+
+#kubectl get pods
+
+to see number of pods with full info
+
+#kubectl get pods -o wide
+
+to see full info of pod
+
+#kubectl describe pod web-server
+
+
+to enter to pod with interactive mode
+
+kubectl exec -it web-server -- /bin/bash
+
+exit ->to comout
+
+to delete pod
+kubectl delete pod web-server
+
+----------
+kubectl commands
+
+https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands
+
+---
+ 
+to delete cluster servers
+
+kops delete cluster –name ${NAME} –yes
+
+Create Cluster State Storage (S3 Bucket)
+Setup SSH Keys
+Create cluster configuration
+Modify cluster configuration(Optional)
+Build cluster
+Validate cluster
+Delete cluster
